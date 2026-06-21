@@ -1,0 +1,6 @@
+# Build output
+/acli
+/dist/
+
+# Runtime data: logcat mirror + screenshots
+/.acli/

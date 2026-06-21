@@ -1,0 +1,67 @@
+# GoReleaser config — cross-compiles acli, publishes binaries to GitHub
+# Releases, and writes a Homebrew formula into carlosmuvi/homebrew-tap.
+# Docs: https://goreleaser.com
+version: 2
+
+project_name: acli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: acli
+    main: .
+    binary: acli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - id: acli
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+# Homebrew cask (replaces the deprecated `brews` formula key). Users install
+# with `brew install carlosmuvi/tap/acli`.
+homebrew_casks:
+  - name: acli
+    repository:
+      owner: carlosmuvi
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/carlosmuvi/acli"
+    description: "Interactive TUI for managing Android emulators and logcat"
+    # The binaries are unsigned; strip the macOS quarantine flag on install so
+    # Gatekeeper doesn't block the first run.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr",
+                           args: ["-dr", "com.apple.quarantine", "#{staged_path}/acli"]
+          end
