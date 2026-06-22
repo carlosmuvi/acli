@@ -3,7 +3,6 @@ package android
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 
@@ -33,17 +32,14 @@ func (a *androidCLI) Devices() ([]Device, error) {
 }
 
 func (a *androidCLI) Launch(avd string, opts LaunchOpts) error {
+	// The real `android emulator start` only supports `--cold`; wipe-data and
+	// headless are emulator-binary features, so delegate those to it.
+	if opts.WipeData || opts.Headless {
+		return emulatorLaunch(a.tools.Emulator, avd, opts)
+	}
 	args := []string{"emulator", "start", avd}
-	// The android CLI's flag surface is intentionally small; pass through the
-	// options it documents and ignore unsupported ones gracefully.
 	if opts.ColdBoot {
-		args = append(args, "--cold-boot")
-	}
-	if opts.WipeData {
-		args = append(args, "--wipe-data")
-	}
-	if opts.Headless {
-		args = append(args, "--no-window")
+		args = append(args, "--cold")
 	}
 	return startDetached(a.tools.Android, args...)
 }
@@ -53,14 +49,9 @@ func (a *androidCLI) Kill(serial string) error {
 }
 
 func (a *androidCLI) Screenshot(serial, path string) error {
-	args := []string{"screen", "capture", "--output=" + path}
-	if serial != "" {
-		args = append(args, "--device="+serial)
-	}
-	if out, err := exec.Command(a.tools.Android, args...).CombinedOutput(); err != nil {
-		return fmt.Errorf("android screen capture: %w: %s", err, strings.TrimSpace(string(out)))
-	}
-	return nil
+	// `android screen capture` can't target a serial, so use adb (always present)
+	// for serial-accurate capture.
+	return adbScreenshot(a.tools.Adb, serial, path)
 }
 
 // parseAVDList extracts AVD names from `android emulator list` output, skipping
