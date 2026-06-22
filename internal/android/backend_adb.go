@@ -42,8 +42,26 @@ func (b *adbBackend) Devices() ([]Device, error) {
 }
 
 func (b *adbBackend) Launch(avd string, opts LaunchOpts) error {
-	if b.tools.Emulator == "" {
-		return errors.New("emulator binary not found")
+	return emulatorLaunch(b.tools.Emulator, avd, opts)
+}
+
+func (b *adbBackend) Kill(serial string) error {
+	if b.tools.Adb == "" {
+		return errNoAdb
+	}
+	return exec.Command(b.tools.Adb, "-s", serial, "emu", "kill").Run()
+}
+
+func (b *adbBackend) Screenshot(serial, path string) error {
+	return adbScreenshot(b.tools.Adb, serial, path)
+}
+
+// emulatorLaunch starts an AVD via the classic `emulator` binary, which is the
+// only tool that supports cold boot / wipe-data / headless flags. Shared by both
+// backends (the android CLI delegates here for options it can't express).
+func emulatorLaunch(emulator, avd string, opts LaunchOpts) error {
+	if emulator == "" {
+		return errors.New("`emulator` binary not found (install it via sdkmanager)")
 	}
 	args := []string{"@" + avd}
 	if opts.ColdBoot {
@@ -55,18 +73,13 @@ func (b *adbBackend) Launch(avd string, opts LaunchOpts) error {
 	if opts.Headless {
 		args = append(args, "-no-window")
 	}
-	return startDetached(b.tools.Emulator, args...)
+	return startDetached(emulator, args...)
 }
 
-func (b *adbBackend) Kill(serial string) error {
-	if b.tools.Adb == "" {
-		return errNoAdb
-	}
-	return exec.Command(b.tools.Adb, "-s", serial, "emu", "kill").Run()
-}
-
-func (b *adbBackend) Screenshot(serial, path string) error {
-	if b.tools.Adb == "" {
+// adbScreenshot captures a device's screen via adb, which (unlike the android
+// CLI) can target a specific serial. Shared by both backends.
+func adbScreenshot(adb, serial, path string) error {
+	if adb == "" {
 		return errNoAdb
 	}
 	args := []string{}
@@ -74,7 +87,7 @@ func (b *adbBackend) Screenshot(serial, path string) error {
 		args = append(args, "-s", serial)
 	}
 	args = append(args, "exec-out", "screencap", "-p")
-	out, err := exec.Command(b.tools.Adb, args...).Output()
+	out, err := exec.Command(adb, args...).Output()
 	if err != nil {
 		return fmt.Errorf("adb screencap: %w", err)
 	}

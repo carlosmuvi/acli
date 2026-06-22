@@ -29,8 +29,9 @@ var (
 			BorderStyle(lipgloss.NormalBorder()).
 			BorderForeground(colorMuted)
 
-	stateRunningStyle = lipgloss.NewStyle().Foreground(colorOK)
-	stateStoppedStyle = lipgloss.NewStyle().Foreground(colorMuted)
+	stateRunningStyle  = lipgloss.NewStyle().Foreground(colorOK)
+	stateStoppedStyle  = lipgloss.NewStyle().Foreground(colorMuted)
+	stateStartingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("11")) // yellow
 )
 
 // levelStyle colors a log line by severity.

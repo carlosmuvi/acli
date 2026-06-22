@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/carlosmuvi/acli/internal/android"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+// launchTimeout is how long a row shows "starting…" before giving up (in case
+// the launch failed and the emulator never appears).
+const launchTimeout = 2 * time.Minute
 
 // emuItem is one row in the emulator list: an AVD that may or may not be
 // running, or a connected (possibly physical) device.
@@ -22,15 +27,53 @@ type emuItem struct {
 // emulatorsModel renders the list of AVDs + running devices and handles
 // launch/kill/screenshot/logcat actions.
 type emulatorsModel struct {
+	// Source of truth, updated independently by avdsMsg / devicesMsg.
+	avds    []string
+	devices []android.Device
+
 	items  []emuItem
 	cursor int
+
+	// launching tracks AVDs the user just started, so their row shows "starting…"
+	// until the booted emulator appears (or the attempt times out).
+	launching map[string]time.Time
 
 	width, height int
 }
 
+// markLaunching records that an AVD launch was requested.
+func (m *emulatorsModel) markLaunching(avd string) {
+	if m.launching == nil {
+		m.launching = map[string]time.Time{}
+	}
+	m.launching[avd] = time.Now()
+}
+
+// isStarting reports whether an AVD is still within its launch window. It's a
+// pure check (no mutation) so View can call it safely; entries are cleared in
+// rebuild once the emulator boots.
+func (m emulatorsModel) isStarting(avd string) bool {
+	t, ok := m.launching[avd]
+	return ok && time.Since(t) <= launchTimeout
+}
+
+// setAVDs / setDevices update the authoritative source-of-truth lists and
+// rebuild the rows. Keeping these separate (rather than reconstructing one from
+// the current rows) prevents transient, misnamed devices from leaking into the
+// AVD list and persisting as phantom rows.
+func (m *emulatorsModel) setAVDs(avds []string) {
+	m.avds = avds
+	m.rebuild()
+}
+
+func (m *emulatorsModel) setDevices(devices []android.Device) {
+	m.devices = devices
+	m.rebuild()
+}
+
 // rebuild merges the known AVD names with currently connected devices into a
 // single sorted list, preserving the cursor position by name where possible.
-func (m *emulatorsModel) rebuild(avds []string, devices []android.Device) {
+func (m *emulatorsModel) rebuild() {
 	prevName := ""
 	if m.cursor < len(m.items) {
 		prevName = m.items[m.cursor].name
@@ -39,7 +82,7 @@ func (m *emulatorsModel) rebuild(avds []string, devices []android.Device) {
 	// Index running emulators by AVD name so we can mark AVDs as running.
 	runningByAVD := map[string]android.Device{}
 	var nonAVD []android.Device
-	for _, d := range devices {
+	for _, d := range m.devices {
 		d := d
 		if d.IsEmu {
 			runningByAVD[d.Name] = d
@@ -49,20 +92,24 @@ func (m *emulatorsModel) rebuild(avds []string, devices []android.Device) {
 	}
 
 	var items []emuItem
-	for _, avd := range avds {
+	for _, avd := range m.avds {
 		it := emuItem{name: avd, avd: avd}
 		if d, ok := runningByAVD[avd]; ok {
 			dd := d
 			it.device = &dd
 			it.running = true
 			delete(runningByAVD, avd)
+			delete(m.launching, avd) // it booted; stop showing "starting…"
 		}
 		items = append(items, it)
 	}
-	// Running emulators whose AVD name wasn't in the list (e.g. unknown).
+	// Running emulators whose name didn't match a known AVD (e.g. one booting or
+	// shutting down whose console name couldn't be resolved). Show them as
+	// running but with no avd, so they vanish cleanly once the device is gone
+	// rather than lingering as a launchable row.
 	for _, d := range runningByAVD {
 		dd := d
-		items = append(items, emuItem{name: d.Name, avd: d.Name, device: &dd, running: true})
+		items = append(items, emuItem{name: d.Name, device: &dd, running: true})
 	}
 	// Physical / non-AVD devices.
 	for _, d := range nonAVD {
@@ -140,6 +187,8 @@ func (m emulatorsModel) View() string {
 		if it.running && it.device != nil {
 			state = stateRunningStyle.Render("running")
 			serial = mutedStyle.Render("  " + it.device.Serial)
+		} else if it.avd != "" && m.isStarting(it.avd) {
+			state = stateStartingStyle.Render("starting…")
 		}
 		name := it.name
 		if i == m.cursor {

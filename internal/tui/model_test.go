@@ -38,6 +38,35 @@ func TestEmulatorListRendersAVDsAndDevices(t *testing.T) {
 	}
 }
 
+// TestNoPhantomRowAfterKill reproduces the kill-time shutdown race: while an
+// emulator tears down, its console name can't be resolved so adb reports it by
+// model name. That transient device must not leak into the AVD list and linger
+// as a phantom "stopped" row once the device disappears.
+func TestNoPhantomRowAfterKill(t *testing.T) {
+	m := New(sdk.Tools{}, doctor.Report{})
+	m = drive(m, tea.WindowSizeMsg{Width: 100, Height: 30})
+	m = drive(m, avdsMsg{avds: []string{"medium_phone"}})
+
+	// Running, resolved to its AVD name → single row.
+	m = drive(m, devicesMsg{devices: []android.Device{
+		{Serial: "emulator-5554", State: "device", Name: "medium_phone", IsEmu: true},
+	}})
+	// Shutdown race: same emulator, now misnamed by model.
+	m = drive(m, devicesMsg{devices: []android.Device{
+		{Serial: "emulator-5554", State: "device", Name: "sdk gphone64 arm64", IsEmu: true},
+	}})
+	// Device gone.
+	m = drive(m, devicesMsg{devices: nil})
+
+	view := m.View()
+	if strings.Contains(view, "sdk gphone64 arm64") {
+		t.Fatalf("phantom model-named row leaked after kill:\n%s", view)
+	}
+	if !strings.Contains(view, "medium_phone") || !strings.Contains(view, "stopped") {
+		t.Fatalf("expected medium_phone stopped after kill:\n%s", view)
+	}
+}
+
 func TestLogcatFilteringByLevelAndText(t *testing.T) {
 	lc := newLogcatModel()
 	lc.setSize(100, 30)

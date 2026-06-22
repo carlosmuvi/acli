@@ -72,7 +72,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.status = errStatus("list AVDs", msg.err)
 		}
-		m.emulators.rebuild(msg.avds, devicesFrom(m.emulators))
+		m.emulators.setAVDs(msg.avds)
 		// AVDs alone don't include running state; a devices refresh follows via tick.
 		return m, nil
 
@@ -80,7 +80,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.status = errStatus("list devices", msg.err)
 		}
-		m.emulators.rebuild(avdsFrom(m.emulators), msg.devices)
+		m.emulators.setDevices(msg.devices)
 		return m, nil
 
 	case tickMsg:
@@ -168,6 +168,7 @@ func (m Model) handleEmulatorKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m.openLogcat(it)
 			}
 			if it.avd != "" {
+				m.emulators.markLaunching(it.avd)
 				m.status = mutedStyle.Render("launching " + it.avd + "…")
 				return m, launchAVD(m.backend, it.avd, android.LaunchOpts{})
 			}
@@ -176,6 +177,7 @@ func (m Model) handleEmulatorKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case matches(msg, keys.ColdBoot):
 		if it, ok := m.emulators.selected(); ok && it.avd != "" {
+			m.emulators.markLaunching(it.avd)
 			m.status = mutedStyle.Render("cold booting " + it.avd + "…")
 			return m, launchAVD(m.backend, it.avd, android.LaunchOpts{ColdBoot: true})
 		}
@@ -183,6 +185,7 @@ func (m Model) handleEmulatorKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case matches(msg, keys.Wipe):
 		if it, ok := m.emulators.selected(); ok && it.avd != "" {
+			m.emulators.markLaunching(it.avd)
 			m.status = mutedStyle.Render("wipe+launch " + it.avd + "…")
 			return m, launchAVD(m.backend, it.avd, android.LaunchOpts{WipeData: true})
 		}
@@ -282,26 +285,4 @@ func screenshotPath(name string) string {
 
 func errStatus(verb string, err error) string {
 	return badStyle.Render(fmt.Sprintf("✗ %s: %v", verb, err))
-}
-
-// avdsFrom / devicesFrom reconstruct the inputs to rebuild() from current items
-// so an AVD-only or device-only refresh preserves the other dimension.
-func avdsFrom(m emulatorsModel) []string {
-	var avds []string
-	for _, it := range m.items {
-		if it.avd != "" {
-			avds = append(avds, it.avd)
-		}
-	}
-	return avds
-}
-
-func devicesFrom(m emulatorsModel) []android.Device {
-	var devs []android.Device
-	for _, it := range m.items {
-		if it.device != nil {
-			devs = append(devs, *it.device)
-		}
-	}
-	return devs
 }

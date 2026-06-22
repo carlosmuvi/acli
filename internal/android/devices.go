@@ -31,7 +31,10 @@ func listDevices(adb string) ([]Device, error) {
 		serial, state := fields[0], fields[1]
 		isEmu := strings.HasPrefix(serial, "emulator-")
 		name := deviceLabel(fields)
-		if isEmu && state == "device" {
+		// Resolve the AVD name even while the device is still "offline" (booting):
+		// the emulator console answers `emu avd name` before adb reports "device",
+		// which lets us collapse the booting emulator onto its AVD row promptly.
+		if isEmu {
 			if avd := emuAVDName(adb, serial); avd != "" {
 				name = avd
 			}
