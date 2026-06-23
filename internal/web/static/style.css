@@ -107,9 +107,13 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: v
 .modal {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.6);
-  display: flex; align-items: center; justify-content: center;
+  /* Hidden by default; the `hidden` attribute (toggled from JS) must win over
+     this rule, so only show when it's absent. */
+  display: none;
+  align-items: center; justify-content: center;
   z-index: 10;
 }
+.modal:not([hidden]) { display: flex; }
 .modal-body {
   position: relative;
   background: var(--panel);
@@ -119,6 +123,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: v
   max-width: 90vw; max-height: 90vh; overflow: auto;
 }
 .modal-body img { max-width: 360px; max-height: 70vh; display: block; border-radius: 6px; }
+.modal-body h2 { margin-top: 0; padding-right: 28px; }
 .close { position: absolute; top: 8px; right: 8px; }
 #doctor-list { list-style: none; margin: 0; padding: 0; }
 #doctor-list li { padding: 4px 0; }
