@@ -1,8 +1,12 @@
 # acli
 
-An interactive terminal UI for managing Android emulators and watching logcat —
-built to run side-by-side with Claude Code. Pick an emulator, launch/kill it,
-open a live filterable logcat pane, and grab screenshots, all from the keyboard.
+An interactive UI for managing Android emulators and watching logcat — built to
+run side-by-side with Claude Code. Pick an emulator, launch/kill it, open a live
+filterable logcat view, and grab screenshots. Comes in two flavors that share
+the same backend:
+
+- **Terminal UI** (default): `acli` — keyboard-driven, runs anywhere.
+- **Web dashboard**: `acli serve` — a clickable browser UI for those who prefer it.
 
 Every log line is also mirrored to a file under `.acli/logs/`, so an agent
 working in an adjacent pane can `grep` the history that scrolls past on screen.
@@ -46,6 +50,21 @@ go build -o acli .
 
 Check the build: `acli version`.
 
+## Web UI
+
+Prefer a graphical UI? Start the dashboard:
+
+```sh
+acli serve              # opens http://localhost:7070 in your browser
+acli serve --port 8080  # custom port
+acli serve --no-open    # don't auto-open the browser
+```
+
+It serves the same actions as the TUI — launch/cold-boot/wipe/kill, live logcat
+streamed over server-sent events with level + text filters, and screenshots —
+from a single self-contained binary (assets are embedded). Logs are mirrored to
+`.acli/logs/` just like the TUI.
+
 ## Keys
 
 **Emulator list**
@@ -81,7 +100,8 @@ Check the build: `acli version`.
 | `internal/doctor` | preflight health checks |
 | `internal/android` | backend interface + `android`-CLI / adb impls + logcat stream |
 | `internal/logmirror` | rotating per-device log files (`.acli/logs/`) |
-| `internal/tui` | Bubble Tea UI: emulator list, logcat view, doctor overlay |
+| `internal/tui` | Bubble Tea terminal UI: emulator list, logcat view, doctor overlay |
+| `internal/web` | web dashboard: HTTP server + embedded assets, logcat over SSE |
 
 ## Runtime data
 
