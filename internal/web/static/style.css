@@ -124,10 +124,14 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: v
   word-break: break-word;
   font-size: 12.5px;
 }
-.log .line { display: flex; gap: 8px; padding: 0 2px; }
-.log .t { color: var(--muted); }
-.log .lv { width: 1ch; font-weight: 700; }
-.log .tag { color: var(--muted); }
+/* Keep the time/level/tag columns on one line; only the message wraps. Flex
+   items default to flex-shrink:1, so without this the fixed columns get
+   squeezed and break mid-token (e.g. "18:42:01" / ".141") on long lines. */
+.log .line { display: flex; gap: 8px; padding: 0 2px; align-items: flex-start; }
+.log .t { color: var(--muted); flex: none; white-space: nowrap; }
+.log .lv { width: 1ch; font-weight: 700; flex: none; }
+.log .tag { color: var(--muted); flex: none; white-space: nowrap; }
+.log .msg { flex: 1; min-width: 0; }
 .lvl-V .lv, .lvl-V .msg { color: var(--muted); }
 .lvl-D .lv { color: var(--debug); }
 .lvl-I .lv { color: var(--ok); }
