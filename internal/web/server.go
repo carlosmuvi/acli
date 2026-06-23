@@ -22,7 +22,7 @@ import (
 	"github.com/carlosmuvi/acli/internal/sdk"
 )
 
-//go:embed static/*
+//go:embed all:static
 var staticFS embed.FS
 
 // shotDir is where screenshots taken from the web UI are written.
@@ -54,6 +54,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/kill", s.handleKill)
 	mux.HandleFunc("/api/screenshot", s.handleScreenshot)
 	mux.HandleFunc("/api/logcat", s.handleLogcat)
+	mux.HandleFunc("/api/meta", s.handleMeta)
 	return mux
 }
 
@@ -169,11 +170,21 @@ func (s *Server) handleLogcat(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	flusher.Flush()
 
+	// PID→process map, refreshed periodically, so we can label each line with a
+	// package/process name for `package:`/`process:` filtering.
+	pidName := android.ProcessMap(s.tools.Adb, serial)
+	refresh := time.NewTicker(4 * time.Second)
+	defer refresh.Stop()
+
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-refresh.C:
+			if m := android.ProcessMap(s.tools.Adb, serial); len(m) > 0 {
+				pidName = m
+			}
 		case line, ok := <-lc.Lines:
 			if !ok {
 				fmt.Fprint(w, "event: end\ndata: {}\n\n")
@@ -184,16 +195,43 @@ func (s *Server) handleLogcat(w http.ResponseWriter, r *http.Request) {
 				mirror.WriteLine(line.Raw)
 			}
 			payload, _ := json.Marshal(map[string]any{
-				"time":  clockOnly(line.Time),
-				"level": string(line.Level.Letter()),
-				"prio":  int(line.Level),
-				"tag":   line.Tag,
-				"msg":   line.Msg,
+				"time":    clockOnly(line.Time),
+				"level":   string(line.Level.Letter()),
+				"prio":    int(line.Level),
+				"tag":     line.Tag,
+				"msg":     line.Msg,
+				"pid":     line.PID,
+				"process": pidName[line.PID],
 			})
 			fmt.Fprintf(w, "data: %s\n\n", payload)
 			flusher.Flush()
 		}
 	}
+}
+
+// handleMeta returns values for filter autocomplete: third-party packages
+// (for `package:mine`) and the current process names.
+func (s *Server) handleMeta(w http.ResponseWriter, r *http.Request) {
+	serial := r.URL.Query().Get("serial")
+	if serial == "" {
+		httpErr(w, http.StatusBadRequest, "missing serial")
+		return
+	}
+	pkgs := android.ThirdPartyPackages(s.tools.Adb, serial)
+	procs := android.ProcessMap(s.tools.Adb, serial)
+	var procNames []string
+	seen := map[string]bool{}
+	for _, n := range procs {
+		base := n
+		if i := strings.IndexByte(base, ':'); i >= 0 {
+			base = base[:i] // collapse "com.foo:svc" → "com.foo"
+		}
+		if base != "" && !seen[base] {
+			seen[base] = true
+			procNames = append(procNames, base)
+		}
+	}
+	writeJSON(w, map[string]any{"mine": pkgs, "processes": procNames})
 }
 
 // --- helpers ---
