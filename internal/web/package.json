@@ -1,0 +1,14 @@
+{
+  "name": "acli-web",
+  "private": true,
+  "type": "module",
+  "description": "Tests + tooling for the acli web dashboard (static assets live in ./static).",
+  "scripts": {
+    "test:unit": "node --test jstest/*.test.js",
+    "test:ui": "playwright test",
+    "test": "npm run test:unit && npm run test:ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
