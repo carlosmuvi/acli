@@ -10,8 +10,10 @@ working in an adjacent pane can `grep` the history that scrolls past on screen.
 ## Requirements
 
 - **adb** (required — logcat depends on it). Install the Android SDK
-  platform-tools (Android Studio, or `brew install --cask android-commandline-tools`)
-  and set `ANDROID_HOME`.
+  platform-tools (Android Studio, or via `sdkmanager "platform-tools"`). acli
+  auto-discovers the SDK at `$ANDROID_HOME`, `$ANDROID_SDK_ROOT`, or the default
+  location (`~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux), so you
+  usually don't need to set anything.
 - **`android` CLI** (optional, preferred) — the agent-first CLI from
   https://developer.android.com/tools/agents. If present, it's used for emulator
   management and screenshots; otherwise acli falls back to `adb`/`emulator`.
@@ -41,6 +43,8 @@ Or build from source:
 go build -o acli .
 ./acli
 ```
+
+Check the build: `acli version`.
 
 ## Keys
 
