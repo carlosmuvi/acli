@@ -38,6 +38,33 @@ test("dashboard renders with modals hidden", async ({ page }) => {
   await page.screenshot({ path: "test-results/dashboard.png" });
 });
 
+test("selecting a device collapses the panel; the toggle restores it", async ({ page }) => {
+  await page.goto("/");
+  const main = page.locator("main");
+  const panel = page.locator("#devices-panel");
+  const toggle = page.locator("#toggle-devices");
+
+  // Starts expanded.
+  await expect(panel).toBeVisible();
+  await expect(main).not.toHaveClass(/devices-collapsed/);
+
+  // Opening logcat on a running device collapses the list.
+  await page
+    .locator(".device", { hasText: "medium_phone" })
+    .getByRole("button", { name: "Logcat" })
+    .click();
+  await expect(main).toHaveClass(/devices-collapsed/);
+  await expect(panel).toBeHidden();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+  // The header toggle brings it back, and toggles off again.
+  await toggle.click();
+  await expect(panel).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await toggle.click();
+  await expect(panel).toBeHidden();
+});
+
 test("doctor modal opens and closes", async ({ page }) => {
   await page.goto("/");
   await page.locator("#doctor-btn").click();

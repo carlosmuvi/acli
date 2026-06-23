@@ -40,6 +40,12 @@ main {
   height: calc(100vh - 53px);
   background: var(--border);
 }
+/* Once a device is selected the list is just taking up room — collapse it so
+   logcat gets the full width. The header toggle (#toggle-devices) brings it
+   back to switch devices. */
+main.devices-collapsed { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+main.devices-collapsed #devices-panel { display: none; }
+#toggle-devices[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 section { background: var(--bg); padding: 14px 16px; overflow: auto; }
 h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); margin: 0 0 12px; }
 
