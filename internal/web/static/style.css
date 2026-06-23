@@ -1,0 +1,168 @@
+:root {
+  --bg: #14131a;
+  --panel: #1d1b26;
+  --border: #2e2b3a;
+  --text: #e6e3ee;
+  --muted: #8a85a0;
+  --accent: #c264ff;
+  --ok: #46d369;
+  --warn: #e6c84a;
+  --bad: #ff5c5c;
+  --info: #5cc8ff;
+  --debug: #7aa2ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+header h1 { margin: 0; font-size: 18px; color: var(--accent); }
+.spacer { flex: 1; }
+.muted { color: var(--muted); }
+
+main {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1px;
+  height: calc(100vh - 53px);
+  background: var(--border);
+}
+section { background: var(--bg); padding: 14px 16px; overflow: auto; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); margin: 0 0 12px; }
+
+#devices { list-style: none; margin: 0; padding: 0; }
+.device {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: var(--panel);
+}
+.device.selected { border-color: var(--accent); }
+.device .name { font-weight: 600; }
+.device .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot.running { background: var(--ok); }
+.dot.stopped { background: var(--muted); }
+.dot.starting { background: var(--warn); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.device .state { font-size: 11px; color: var(--muted); }
+.device .actions { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+
+.btn {
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: #2a2735;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.danger:hover:not(:disabled) { border-color: var(--bad); color: var(--bad); }
+
+.logcat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.logcat-head label { font-size: 12px; color: var(--muted); }
+.logcat-head select, .logcat-head input {
+  font: inherit; font-size: 12px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px;
+}
+.filter-wrap { position: relative; }
+#filter { width: 320px; }
+
+.ac {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  max-height: 260px;
+  overflow: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.ac li {
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.ac li .val { color: var(--text); }
+.ac li .hint { color: var(--muted); font-size: 11px; margin-left: auto; }
+.ac li.active, .ac li:hover { background: #322d40; }
+.ac li .val b { color: var(--accent); font-weight: 700; }
+
+.log {
+  height: calc(100% - 70px);
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12.5px;
+}
+.log .line { display: flex; gap: 8px; padding: 0 2px; }
+.log .t { color: var(--muted); }
+.log .lv { width: 1ch; font-weight: 700; }
+.log .tag { color: var(--muted); }
+.lvl-V .lv, .lvl-V .msg { color: var(--muted); }
+.lvl-D .lv { color: var(--debug); }
+.lvl-I .lv { color: var(--ok); }
+.lvl-W .lv, .lvl-W .msg { color: var(--warn); }
+.lvl-E .lv, .lvl-E .msg, .lvl-F .lv, .lvl-F .msg { color: var(--bad); }
+
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  /* Hidden by default; the `hidden` attribute (toggled from JS) must win over
+     this rule, so only show when it's absent. */
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 10;
+}
+.modal:not([hidden]) { display: flex; }
+.modal-body {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 90vw; max-height: 90vh; overflow: auto;
+}
+.modal-body img { max-width: 360px; max-height: 70vh; display: block; border-radius: 6px; }
+.modal-body h2 { margin-top: 0; padding-right: 28px; }
+.close { position: absolute; top: 8px; right: 8px; }
+#doctor-list { list-style: none; margin: 0; padding: 0; }
+#doctor-list li { padding: 4px 0; }
+#doctor-list .fix { color: var(--muted); padding-left: 20px; font-size: 12px; }
+
+/* Narrow floating-window / side-panel layout: stack the panels vertically so
+   the dashboard stays usable when docked beside the emulator. */
+@media (max-width: 680px) {
+  main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  #devices-panel { max-height: 38vh; }
+  .device .actions { width: 100%; justify-content: flex-start; }
+}

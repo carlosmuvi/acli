@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>acli</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>acli</h1>
+    <span id="backend" class="muted"></span>
+    <span class="spacer"></span>
+    <button id="refresh" class="btn">↻ Refresh</button>
+    <button id="doctor-btn" class="btn">Doctor</button>
+  </header>
+
+  <main>
+    <section id="devices-panel">
+      <h2>Emulators &amp; Devices</h2>
+      <ul id="devices"></ul>
+      <p id="devices-empty" class="muted" hidden>
+        No AVDs or devices found. Create one with <code>android emulator create</code>, or plug in a device.
+      </p>
+    </section>
+
+    <section id="logcat-panel">
+      <div class="logcat-head">
+        <h2 id="logcat-title">Logcat</h2>
+        <span class="spacer"></span>
+        <label>level
+          <select id="level">
+            <option value="0">V</option>
+            <option value="1">D</option>
+            <option value="2">I</option>
+            <option value="3">W</option>
+            <option value="4">E</option>
+            <option value="5">F</option>
+          </select>
+        </label>
+        <div class="filter-wrap">
+          <input id="filter" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="filter… e.g. package:mine level:W -tag:Choreographer">
+          <ul id="ac" class="ac" hidden></ul>
+        </div>
+        <button id="pause" class="btn" disabled>Pause</button>
+        <button id="clear" class="btn" disabled>Clear</button>
+      </div>
+      <div id="log" class="log"></div>
+      <p id="logcat-hint" class="muted">Select a running device and click <strong>Logcat</strong>.</p>
+    </section>
+  </main>
+
+  <div id="shot-modal" class="modal" hidden>
+    <div class="modal-body">
+      <button id="shot-close" class="btn close">✕</button>
+      <img id="shot-img" alt="screenshot">
+      <p id="shot-path" class="muted"></p>
+    </div>
+  </div>
+
+  <div id="doctor-modal" class="modal" hidden>
+    <div class="modal-body">
+      <button id="doctor-close" class="btn close">✕</button>
+      <h2>Doctor</h2>
+      <ul id="doctor-list"></ul>
+    </div>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

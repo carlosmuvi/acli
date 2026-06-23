@@ -4,9 +4,10 @@ Guidance for Claude Code working in this repository.
 
 ## What this is
 
-`acli` is an interactive **Go + Bubble Tea** TUI for managing Android emulators
-and watching logcat, meant to run alongside Claude Code. See `README.md` for
-user-facing docs and keybindings.
+`acli` manages Android emulators and watches logcat, meant to run alongside
+Claude Code. It has two front-ends over one shared backend: a **Go + Bubble Tea
+TUI** (`acli`, default) and a **web dashboard** (`acli serve`). See `README.md`
+for user-facing docs and keybindings.
 
 ## Commands
 
@@ -26,13 +27,19 @@ push and PR. Releases are cut by tagging `vX.Y.Z`, which triggers GoReleaser
 ## Architecture
 
 ```
-main.go                 discover tooling -> doctor (hard-fail on missing adb) -> launch TUI
+main.go                 subcommand router (default TUI, `serve`, `version`); doctor gate
 internal/sdk            locate `android`, `adb`, `emulator`, SDK root
 internal/doctor         preflight health checks (adb is the only hard requirement)
-internal/android        Backend interface + impls, logcat stream, device parsing
+internal/android        Backend interface + impls, logcat stream, device parsing, Merge()
 internal/logmirror      rotating per-device log files under .acli/logs/
-internal/tui            Bubble Tea UI: root model, emulator list, logcat view, doctor overlay
+internal/tui            Bubble Tea TUI: root model, emulator list, logcat view, doctor overlay
+internal/web            web dashboard: HTTP server, embedded static/ assets, logcat over SSE
 ```
+
+Both front-ends share the same backend. `android.Merge(avds, devices)` is the
+single source of the unified emulator/device list — use it rather than
+re-implementing the AVD↔device matching (the TUI keeps its own copy because it
+also tracks cursor/launching UI state).
 
 ### Backend is hybrid (`internal/android`)
 - `Backend` interface (`backend.go`) abstracts emulator mgmt + screenshots.
