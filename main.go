@@ -72,20 +72,42 @@ func runTUI() {
 func runServe(args []string) {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	port := fs.Int("port", 7070, "port to listen on")
-	noOpen := fs.Bool("no-open", false, "don't open the browser automatically")
+	noOpen := fs.Bool("no-open", false, "don't open anything automatically")
+	browser := fs.Bool("browser", false, "open a normal browser tab instead of a floating app window")
+	size := fs.String("size", "820x900", "floating window size as WxH")
 	_ = fs.Parse(args)
 
 	tools, report := gate()
 	srv := web.NewServer(tools, report)
 	url := fmt.Sprintf("http://localhost:%d", *port)
 	fmt.Printf("acli web UI → %s  (ctrl+c to stop)\n", url)
-	if !*noOpen {
+
+	switch {
+	case *noOpen:
+		// open nothing
+	case *browser:
 		web.OpenBrowser(url)
+	default:
+		// Floating app window; fall back to a browser tab if no Chromium found.
+		w, h := parseSize(*size)
+		if !web.OpenApp(url, w, h) {
+			web.OpenBrowser(url)
+		}
 	}
+
 	if err := srv.Listen(*port); err != nil {
 		fmt.Fprintln(os.Stderr, "acli serve:", err)
 		os.Exit(1)
 	}
+}
+
+// parseSize parses "WxH" (e.g. "820x900"), falling back to a sensible default.
+func parseSize(s string) (int, int) {
+	var w, h int
+	if _, err := fmt.Sscanf(s, "%dx%d", &w, &h); err != nil || w <= 0 || h <= 0 {
+		return 820, 900
+	}
+	return w, h
 }
 
 func printDoctor(r doctor.Report) {
