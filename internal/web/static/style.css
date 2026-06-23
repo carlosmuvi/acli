@@ -85,7 +85,37 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: v
   background: var(--panel); color: var(--text);
   border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px;
 }
-#filter { width: 200px; }
+.filter-wrap { position: relative; }
+#filter { width: 320px; }
+
+.ac {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  max-height: 260px;
+  overflow: auto;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.ac li {
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.ac li .val { color: var(--text); }
+.ac li .hint { color: var(--muted); font-size: 11px; margin-left: auto; }
+.ac li.active, .ac li:hover { background: #322d40; }
+.ac li .val b { color: var(--accent); font-weight: 700; }
 
 .log {
   height: calc(100% - 70px);
@@ -128,3 +158,11 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: v
 #doctor-list { list-style: none; margin: 0; padding: 0; }
 #doctor-list li { padding: 4px 0; }
 #doctor-list .fix { color: var(--muted); padding-left: 20px; font-size: 12px; }
+
+/* Narrow floating-window / side-panel layout: stack the panels vertically so
+   the dashboard stays usable when docked beside the emulator. */
+@media (max-width: 680px) {
+  main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  #devices-panel { max-height: 38vh; }
+  .device .actions { width: 100%; justify-content: flex-start; }
+}

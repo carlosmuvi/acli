@@ -38,7 +38,11 @@
             <option value="5">F</option>
           </select>
         </label>
-        <input id="filter" type="search" placeholder="filter tag/message…">
+        <div class="filter-wrap">
+          <input id="filter" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="filter… e.g. package:mine level:W -tag:Choreographer">
+          <ul id="ac" class="ac" hidden></ul>
+        </div>
         <button id="pause" class="btn" disabled>Pause</button>
         <button id="clear" class="btn" disabled>Clear</button>
       </div>
@@ -63,6 +67,6 @@
     </div>
   </div>
 
-  <script src="/app.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>
