@@ -47,6 +47,46 @@ test("doctor modal opens and closes", async ({ page }) => {
   await expect(page.locator("#doctor-modal")).toBeHidden();
 });
 
+test("long logcat lines wrap only in the message column", async ({ page }) => {
+  // Regression guard: the fixed time/level/tag columns are flex items and once
+  // got squeezed by a long message until they broke mid-token (e.g. the
+  // timestamp split into "18:42:01" / ".141"). Render a line the way lineNode
+  // does and assert only .msg wraps.
+  await page.setViewportSize({ width: 760, height: 600 });
+  await page.goto("/");
+
+  await page.evaluate(() => {
+    const longMsg =
+      "at com.google.android.chimera.IntentOperation.onHandleIntent(" +
+      ":com.google.android.gms@262233035@26.22.33 (260400-932714197):1) " +
+      "and a great deal more text to force the message onto several lines";
+    const line = document.createElement("div");
+    line.className = "line lvl-E";
+    line.innerHTML =
+      '<span class="t">18:42:01.141</span>' +
+      '<span class="lv">E</span>' +
+      '<span class="tag">constellation:</span>' +
+      `<span class="msg">${longMsg}</span>`;
+    document.querySelector("#log").append(line);
+  });
+
+  // Each column is a (blockified) flex item, so height is the tell: a column
+  // kept on one line is one line tall, a wrapped one is taller. The single-char
+  // level span is the one-line reference. Without the fix this fails two ways:
+  // align-items:stretch makes every column as tall as the wrapped message (so
+  // .msg is no longer the tallest), and the unconstrained .t/.tag wrap too.
+  const h = await page.evaluate(() => {
+    const q = (sel) => document.querySelector("#log .line " + sel).getBoundingClientRect().height;
+    return { t: q(".t"), lv: q(".lv"), tag: q(".tag"), msg: q(".msg") };
+  });
+  expect(h.t).toBeCloseTo(h.lv, 0); // time stays on one line
+  expect(h.tag).toBeCloseTo(h.lv, 0); // tag stays on one line
+  expect(h.msg).toBeGreaterThan(h.lv * 1.5); // only the message wraps
+
+  // And the timestamp text must survive intact (not broken across boxes).
+  await expect(page.locator("#log .line .t")).toHaveText("18:42:01.141");
+});
+
 test("filter autocomplete suggests keys and package:mine", async ({ page }) => {
   await page.goto("/");
   const filter = page.locator("#filter");
