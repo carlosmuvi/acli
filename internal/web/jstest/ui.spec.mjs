@@ -65,6 +65,20 @@ test("selecting a device collapses the panel; the toggle restores it", async ({ 
   await expect(panel).toBeHidden();
 });
 
+test("a lone running device auto-opens logcat and collapses the panel", async ({ page }) => {
+  // Single running entry → unambiguous target, so open it without a click.
+  await page.route("**/api/inventory", (r) =>
+    r.fulfill({ json: { backend: "mock", entries: [
+      { name: "solo_phone", avd: "solo_phone", serial: "emulator-5554", running: true, isEmu: true },
+    ] } }),
+  );
+  await page.goto("/");
+
+  await expect(page.locator("#logcat-title")).toHaveText("Logcat ▸ solo_phone");
+  await expect(page.locator("main")).toHaveClass(/devices-collapsed/);
+  await expect(page.locator("#devices-panel")).toBeHidden();
+});
+
 test("doctor modal opens and closes", async ({ page }) => {
   await page.goto("/");
   await page.locator("#doctor-btn").click();

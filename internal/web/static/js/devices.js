@@ -5,6 +5,11 @@ import { state, LAUNCH_TIMEOUT } from "./state.js";
 import { api } from "./api.js";
 import { openLogcat, stopLogcat } from "./logcat.js";
 
+// Auto-open logcat once, when there's a single obvious target. Guarded so it
+// only fires the first time (not on every 3s poll, and never after the user
+// has interacted with a device).
+let autoOpened = false;
+
 export async function refresh() {
   let data;
   try { data = await api.get("/api/inventory"); }
@@ -14,6 +19,17 @@ export async function refresh() {
   for (const e of state.entries) {
     if (e.running && e.avd) state.starting.delete(e.avd);
   }
+  renderDevices();
+  maybeAutoOpen();
+}
+
+function maybeAutoOpen() {
+  if (autoOpened || state.log.serial) return;
+  // Only when there's a single device and it's running — an unambiguous target.
+  if (state.entries.length !== 1 || !state.entries[0].running) return;
+  autoOpened = true;
+  state.selected = state.entries[0].serial;
+  openLogcat(state.entries[0]); // collapses the panel itself
   renderDevices();
 }
 
