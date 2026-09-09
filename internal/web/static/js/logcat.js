@@ -1,6 +1,6 @@
 // Live logcat: EventSource stream, batched rendering, and the line view.
 
-import { $, el } from "./dom.js";
+import { $, el, setDevicesCollapsed } from "./dom.js";
 import { state } from "./state.js";
 import { api } from "./api.js";
 import { knownTags, procSet, mineSet, passesFilter } from "./filter.js";
@@ -21,6 +21,8 @@ export function openLogcat(e) {
   $("#pause").disabled = false;
   $("#clear").disabled = false;
   $("#pause").textContent = "Pause";
+  // A device is now selected; collapse the list so logcat owns the width.
+  setDevicesCollapsed(true);
   renderLog();
 
   // Reset and load autocomplete values for this device.
